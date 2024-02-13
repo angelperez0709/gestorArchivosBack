@@ -39,6 +39,18 @@ class Database
         
 
     }
+    public function insert($table,$data){
+        $sql = "INSERT INTO $table (";
+        $sql .= implode(",",array_keys($data)).") VALUES (";
+        $sql .= ":".implode(",:",array_keys($data)).")";
+        $sql = $this->database->prepare($sql);
+        //if whith exe and an array with the bindparams and the values
+        if($sql->execute($data)){
+            return $this->database->lastInsertId();
+        }else{
+            return false;
+        }
+    }
     public function checkToken($token){
         $sql = 'SELECT id FROM users WHERE token = :token';
         $result = $this->query($sql, [':token' => $token]);
