@@ -25,7 +25,6 @@ if ($data['username'] != '' && $data['password'] != '') {
         }else{
             $response->ok = false;
         }
-
     } else {
         $response->ok = false;
     }
