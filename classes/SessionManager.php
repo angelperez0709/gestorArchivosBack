@@ -23,7 +23,7 @@ class SessionManager implements SessionInterface
      * @param string $key
      * @return mixed
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         if ($this->has($key)) {
             return $_SESSION[$key];
@@ -35,12 +35,11 @@ class SessionManager implements SessionInterface
     /**
      * @param string $key
      * @param mixed $value
-     * @return SessionManager
+     * @return void
      */
-    public function set(string $key, $value): SessionInterface
+    public function set(string $key, $value): void
     {
         $_SESSION[$key] = $value;
-        return $this;
     }
 
     public function remove(string $key): void

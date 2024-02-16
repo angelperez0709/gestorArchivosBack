@@ -17,11 +17,10 @@ interface SessionInterface
      * Gets a session value by key.
      *
      * @param string $key     The key of the session value.
-     * @param mixed  $default The default value to return if the key does not exist.
      *
      * @return mixed The session value if found, otherwise the default value.
      */
-    public function get(string $key, $default = null);
+    public function get(string $key) : mixed;
 
     /**
      * Removes a session value by key.

@@ -5,18 +5,27 @@ header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Conte
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 $method = $_SERVER['REQUEST_METHOD'];
 require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/DatabaseImpl.php");
+require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/SessionManager.php");
 $data = json_decode(file_get_contents('php://input'), true);
 $response = new stdClass();
-$con = new DatabaseImpl();
 if ($data['username'] != '' && $data['password'] != '') {
-    session_start();
     $con = new DatabaseImpl();
-    $sql = 'SELECT token, password FROM users WHERE username = :username';
-    $result = $con->prepareQuery($sql, [':username' => $data['username']]);
-    if ($result !== false && count($result) === 1  && $result[0]['password'] == $data['password']) {
-        $response->ok = true;
-        $response->data = $result[0]['token'];
-        $_SESSION['token'] = $result[0]['token'];
+    $result = $con->prepareQuery(
+        "select",
+        "users",
+        ["id,password"],
+        [':username' => $data['username'], ":password" => $data["password"]],
+        ["where" => "username = :username and password = :password"]
+    );
+    if ($result !== false && count($result) === 1 && $result[0]['password'] == $data['password']) {
+        [$result,$token] = $con->updateToken($result[0]['id']);
+        if ($result == 1) {
+            $response->ok = true;
+            $response->data = $token;
+        }else{
+            $response->ok = false;
+        }
+
     } else {
         $response->ok = false;
     }

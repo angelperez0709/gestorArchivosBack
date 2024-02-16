@@ -4,40 +4,41 @@ header('Content-type: application/json');
 header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method, Authorization");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/DatabaseImpl.php");
+require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/SessionManager.php");
 
 try {
-    session_start();
+    $response = new stdClass();
     $data = json_decode(file_get_contents('php://input'), true);
     $token = apache_request_headers()["Authorization"] ?? "";
 
     $directory = $data['parentDirectory'];
     $con = new DatabaseImpl();
 
-    if ($token == $_SESSION['token']) {
+    if ($con->checkToken($token)) {
         //create a sql to get the id of the directory from the user and path
-        $sql = "SELECT dir.id
-    FROM directories dir
-    INNER JOIN users us on dir.id_user = us.id
-    WHERE us.token = :token and dir.namePath=:namePath";
-        $rows = $con->Preparequery($sql, ["token" => $token, "namePath" => $directory]);
+        $rows = $con->prepareQuery(
+            "select",
+            "directories dir",
+            ["dir.id"],
+            ["token" => $token, "namePath" => $directory],
+            ["joins" => ["INNER JOIN" => " users us on us.id = dir.id_user"], "where" => "us.token = :token and dir.namePath=:namePath"]
+        );
+
         if ($rows !== false && count($rows) === 1) {
             $idDirectory = $rows[0]['id'];
-            $sql = "SELECT GetFullPath(:idDirectory) as path";
-            $path = $con->Preparequery($sql, ["idDirectory" => $idDirectory])[0]['path'];
+            $path = $con->Preparequery("function", null, ["GetFullPath(:idDirectory) path"], ["idDirectory" => $idDirectory],[])[0]['path'];
             if ($path !== false) {
-                if (isset($_SESSION['currentDir'])) {
-                    $_SESSION['lastDir'] = $_SESSION['currentDir'];
-                }
-                $_SESSION['currentDir'] = $path;
-                echo json_encode(['data' => ['id' => $idDirectory, 'path' => $path]]);
+                $response->data = ['id' => $idDirectory, 'path' => $path];
             }
         } else {
-            echo json_encode(['error' => 'Invalid directory']);
+            $response->error = "Invalid directory";
         }
 
     } else {
-        echo json_encode(['error' => 'Invalid token']);
+        $response->error = "Invalid token Authentication";
     }
 } catch (Exception $e) {
-    echo json_encode(['error' => 'An error occurred']);
+    $response->error = "Internal server error";
+} finally {
+    echo json_encode($response);
 }

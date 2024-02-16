@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-
 require_once($_SERVER['DOCUMENT_ROOT'] . "/api/interfaces/DatabaseDAO.php");
 
 class DatabaseImpl extends PDO implements DatabaseDAO
@@ -19,38 +18,72 @@ class DatabaseImpl extends PDO implements DatabaseDAO
             echo "Error: " . $e->getMessage();
         }
     }
-    public function fetch(PDOStatement $result): array
+
+    public function fetchQuery(PDOStatement $result): array
     {
         return $result->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function prepareQuery(string $type,string $table, array $params): array
+    public function prepareQuery(string $type, ?string $table = null, ?array $data = null, array $params, array $fields): array|int
     {
-        $stmt = $this->prepare($sql);
-        foreach ($params as $param => $value) {
-            $stmt->bindParam($param, $value);
+        $dataSql = $data ? implode(", ", $data) : '';
+        $types = [
+            'select' => "SELECT $dataSql FROM $table",
+            'update' => "UPDATE $table SET $dataSql",
+            "function" => "SELECT $dataSql"
+        ];
+        $sql = $types[$type];
+
+        foreach ($fields['joins'] ?? [] as $key => $value) {
+            $sql .= " " . $key . " " . $value;
         }
-        $stmt->execute();
-        return $this->fetch($stmt);
+
+        $sql .= isset($fields['where']) ? " WHERE " . $fields['where'] : '';
+        $sql .= isset($fields['order']) ? " ORDER BY " . $fields['order'] : '';
+        $sql .= isset($fields['limit']) ? " LIMIT " . $fields['limit'] : '';
+
+        return $this->executeQuery($sql, $params);
     }
 
-    public function insert($table, $data) : int|bool
+    public function executeQuery($sql, $params): array|int
+    {
+        $stmt = $this->prepare($sql);
+        $stmt->execute($params);
+
+        if (strpos($sql, 'UPDATE') === 0 || strpos($sql, 'DELETE') === 0) {
+            return $stmt->rowCount();
+        }
+        return $this->fetchQuery($stmt);
+    }
+
+    public function insert($table, $data): int|bool
     {
         $columns = implode(", ", array_keys($data));
         $values = ":" . implode(", :", array_keys($data));
         $sql = "INSERT INTO $table ($columns) VALUES ($values)";
-        $this->prepareQuery($sql, $data);
-        return $this->lastInsertId();
+        $this->executeQuery($sql, $data);
+        return intval($this->lastInsertId());
     }
 
-    public function checkToken(string $token): bool
+    public function checkToken(string $token): int
     {
-        $sql = 'SELECT id FROM users WHERE token = :token';
-        $result = $this->prepareQuery($sql, [':token' => $token]);
-        if (count($result) == 1) {
-            return $result[0]['id'];
-        } else {
-            return false;
+        try {
+            $result = $this->prepareQuery("select", "users", ["id"], ["token" => $token], ["where" => "token = :token"]);
+            if (count($result) == 1) {
+                return intval($result[0]['id']);
+            } else {
+                return 0;
+            }
+        } catch (Exception $e) {
+            return 0;
         }
+    }
+
+    public function updateToken(int $id): array
+    {
+        $string = sha1(base64_encode(random_bytes(10)));
+        $result = $this->prepareQuery("update", "users", ["token = :token"], ["id" => $id, "token" => $string], ["where" => "id = :id"]);
+        return [$result, $string];
+
     }
 }
