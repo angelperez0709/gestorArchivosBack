@@ -9,10 +9,25 @@ try {
 
     $data = json_decode(file_get_contents('php://input'), true);
     $token = apache_request_headers()["Authorization"] ?? "";
-    $idDirectory = $data['id'];
+    $namePath = $data['path'];
     $con = new DatabaseImpl();
     $idUser = $con->checkToken($token);
     if ($idUser) {
+        $resultId = $con->prepareQuery(
+            "select",
+            "directories dir",
+            ["dir.id"],
+            ["namePath" => $namePath, "idUser" => $idUser],
+            ["where" => "dir.namePath = :namePath AND dir.id_user = :idUser"]
+        );
+        if ($resultId === false || count($resultId) === 0) {
+            $response->error = "Invalid directory";
+            echo json_encode($response);
+            return;
+        }
+        $idDirectory = $resultId[0]['id'];
+
+        // get data from the child directories
         $result = $con->prepareQuery(
             "select",
             "directories dir",
@@ -20,6 +35,8 @@ try {
             ["id" => $idDirectory, "idUser" => $idUser],
             ["where" => "dir.id_directory = :id AND dir.id_user = :idUser"]
         );
+
+        // get the path of the parent directory
         $resultPath = $con->prepareQuery(
             "select",
             "directories dir",
@@ -34,20 +51,20 @@ try {
         if ($resultPath === false || count($resultPath) === 0) {
             $resultPath[0]['namePath'] = '';
         }
-        $sql = "SELECT fi.name,fi.id from files as fi
-    INNER JOIN directories as dir ON dir.id = fi.id_directory
-    WHERE dir.id = :id";
+
+        // get the files from the directory
         $resultFiles = $con->prepareQuery(
             "select",
             "files fi",
-            ["fi.name,fi.id"],
+            ["concat(fi.name,'.',fi.extension) name,fi.id"],
             ["id" => $idDirectory],
             ["where" => "fi.id_directory = :id", "join" => ["INNER JOIN" => "directories dir ON dir.id = fi.id_directory"]]
         );
         if ($resultFiles === false || count($resultFiles) === 0) {
             $resultFiles = [];
         }
-        $response->data = ["status" => 200, "directories" => $result, "files" => $resultFiles, "prevPath" => $resultPath[0]['namePath']];
+        $path = $con->Preparequery("function", null, ["GetFullPath(:idDirectory) path"], ["idDirectory" => $idDirectory], [])[0]['path'];
+        $response->data = ["status" => 200, "directories" => $result, "files" => $resultFiles, "prevPath" => $resultPath[0]['namePath'], "path" => $path, "id" => $idDirectory];
         echo json_encode($response);
     }
 
