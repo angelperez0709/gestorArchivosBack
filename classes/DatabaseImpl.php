@@ -65,6 +65,17 @@ class DatabaseImpl extends PDO implements DatabaseDAO
         return intval($this->lastInsertId());
     }
 
+    public function delete($table, $params): int
+    {
+        $last_key = array_key_last($params);
+        $where = "";
+        array_walk($params, function ($value, $key,$last_key) use (&$where){
+            $where .= $key . " = :" . $key.($key != $last_key ? " AND " : "");
+        },$last_key);
+        $sql = "DELETE FROM $table WHERE $where";
+        return $this->executeQuery($sql, $params);
+    }
+
     public function checkToken(string $token): int
     {
         try {
