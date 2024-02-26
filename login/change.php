@@ -19,6 +19,8 @@ try {
         throw new Exception("Passwords are not the same", 400);
     }
 
+    $params = [":id" => $idUser];
+    $setUpdate = "";
     if ($data['username'] != "") {
 
         $result = $con->prepareQuery(
@@ -28,42 +30,39 @@ try {
             [':username' => $data['username']],
             ["where" => "username = :username"]
         );
-    }
-    if ($result === false || count($result) > 0) {
-        throw new Exception("User already exist", 404);
-    }
-
-    if ($data['newPassword'] == '') {
-        //update only username
-        $resultUpdate = $con->prepareQuery(
-            "update",
-            "users",
-            ["username = :username"],
-            [':username' => $data['username'], ':id' => $idUser],
-            ["where" => "id = :id"],
-        );
-        if ($resultUpdate === 0 || $resultUpdate === false) {
-            throw new Exception("An error was ocurred, please try again", 500);
+        if ($result === false || count($result) > 0) {
+            throw new Exception("User already exist", 404);
         }
-    } else {
-        //update username and password
-        $result = $con->prepareQuery(
-            "update",
-            "users",
-            ["username = :username, password = :password"],
-            [':username' => $data['username'], ':password' => password_hash($data['newPassword'], PASSWORD_DEFAULT), ':id' => $idUser],
-            ["where" => "id = :id"],
-        );
-        if ($result === 0 || $result === false) {
-            throw new Exception("An error was ocurred, please try again", 500);
-        }
+        $params[":username"] = $data['username'];
+        $setUpdate = "username = :username";
     }
 
-    $response->ok = true;
+    if ($data['newPassword'] != '') {
+        $params[":password"] = password_hash($data['newPassword'], PASSWORD_DEFAULT);
+        $setUpdate .= ($setUpdate != "" ? ", " : "") . "password = :password";
+    }
 
+    //update only username
+    $resultUpdate = $con->prepareQuery(
+        "update",
+        "users",
+        [$setUpdate],
+        $params,
+        ["where" => "id = :id"],
+    );
+    if ($resultUpdate === 0 || $resultUpdate === false) {
+        throw new Exception("An error was ocurred, please try again", 500);
+    }
+
+    $response->data = [
+        "status" => 200,
+        "message" => "User updated successfully"
+    ];
 } catch (Exception $e) {
-    $response->ok = false;
-    $response->error = $e->getMessage();
+    $response->data = [
+        "status" => $e->getCode() ?? 500,
+        "message" => $e->getMessage()
+    ];
 } finally {
     echo json_encode($response);
 }
