@@ -5,7 +5,6 @@ header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Conte
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 $method = $_SERVER['REQUEST_METHOD'];
 require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/DatabaseImpl.php");
-require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/SessionManager.php");
 $data = json_decode(file_get_contents('php://input'), true);
 $response = new stdClass();
 if ($data['username'] != '' && $data['password'] != '') {
@@ -14,15 +13,15 @@ if ($data['username'] != '' && $data['password'] != '') {
         "select",
         "users",
         ["id,password"],
-        [':username' => $data['username'], ":password" => $data["password"]],
-        ["where" => "username = :username and password = :password"]
+        [':username' => $data['username']],
+        ["where" => "username = :username"]
     );
-    if ($result !== false && count($result) === 1 && $result[0]['password'] == $data['password']) {
-        [$result,$token] = $con->updateToken($result[0]['id']);
+    if ($result !== false && count($result) === 1 && password_verify($data['password'], $result[0]['password'])) {
+        [$result, $token] = $con->updateToken($result[0]['id']);
         if ($result == 1) {
             $response->ok = true;
             $response->data = $token;
-        }else{
+        } else {
             $response->ok = false;
         }
     } else {
@@ -33,4 +32,3 @@ if ($data['username'] != '' && $data['password'] != '') {
     $response->ok = false;
 }
 echo json_encode($response);
-?>
