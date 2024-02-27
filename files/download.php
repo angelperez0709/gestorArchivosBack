@@ -4,9 +4,9 @@ header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With,Conten
 header("Access-Control-Allow-Methods: POST,GET");
 require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/DatabaseImpl.php");
 $con = new DatabaseImpl();
-$token = apache_request_headers()["Authorization"] ?? "";
 $response = new stdClass();
 $data = json_decode(file_get_contents('php://input'), true);
+$token = apache_request_headers()["Authorization"] ?? "";
 $idFile = $data['idFile'];
 $idUser = $con->checkToken($token);
 if ($idUser) {

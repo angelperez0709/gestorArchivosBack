@@ -5,7 +5,7 @@ header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Conte
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
 require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/DatabaseImpl.php");
 $data = json_decode(file_get_contents('php://input'), true);
-$token = apache_request_headers()["Authorization"] ?? "";
+$token = $data["token"];
 $parentId = $data['parentDirectory'];
 $name = $data['name'];
 $response = new stdClass();

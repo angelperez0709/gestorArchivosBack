@@ -8,7 +8,7 @@ try {
     $response = new stdClass();
 
     $data = json_decode(file_get_contents('php://input'), true);
-    $token = apache_request_headers()["Authorization"] ?? "";
+    $token = $data["token"];
     $namePath = $data['path'];
     $con = new DatabaseImpl();
     $idUser = $con->checkToken($token);

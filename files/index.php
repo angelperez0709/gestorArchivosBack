@@ -10,7 +10,7 @@ $name = pathinfo($file['name'], PATHINFO_FILENAME);
 $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
 $idDirectory = $_POST['id'];
 $response = new stdClass();
-$token = apache_request_headers()["Authorization"] ?? "";
+$token = $_POST['token'];
 // generate a random name for the file
 $fileName = md5(uniqid(rand(), true));
 try {

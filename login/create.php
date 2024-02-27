@@ -26,7 +26,7 @@ try {
         throw new Exception("User already exists", 400);
     }
 
-    $result = $con->insert("users", ["username" => $data['username'], "password" => password_hash($data['password'], PASSWORD_DEFAULT)]);
+    $result = $con->insert("users", ["username" => $data['username'], "password" => password_hash($data['password'], PASSWORD_DEFAULT),"token"=>""]);
 
     if ($result == 0) {
         throw new Exception("Error creating the user, please try again", 400);

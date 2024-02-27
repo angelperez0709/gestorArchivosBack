@@ -9,8 +9,7 @@ require($_SERVER['DOCUMENT_ROOT'] . "/api/classes/SessionManager.php");
 try {
     $response = new stdClass();
     $data = json_decode(file_get_contents('php://input'), true);
-    $token = apache_request_headers()["Authorization"] ?? "";
-
+    $token = $data["token"];
     $directory = $data['parentDirectory'];
     $con = new DatabaseImpl();
 
@@ -26,7 +25,7 @@ try {
 
         if ($rows !== false && count($rows) === 1) {
             $idDirectory = $rows[0]['id'];
-            $path = $con->Preparequery("function", null, ["GetFullPath(:idDirectory) path"], ["idDirectory" => $idDirectory],[])[0]['path'];
+            $path = $con->Preparequery("function", null, ["GetFullPath(:idDirectory) path"], ["idDirectory" => $idDirectory], [])[0]['path'];
             if ($path !== false) {
                 $response->data = ['id' => $idDirectory, 'path' => $path];
             }

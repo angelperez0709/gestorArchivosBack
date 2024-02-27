@@ -7,9 +7,9 @@ class DatabaseImpl extends PDO implements DatabaseDAO
 {
 
     public function __construct(
-        $dsn = 'mysql:host=localhost;dbname=managerfiles',
-        $username = 'root',
-        $password = '',
+        $dsn = 'mysql:host=localhost;dbname=id21924055_managerfiles',
+        $username = 'id21924055_angelico7900',
+        $password = '1Bffaskdjfljaalsdfj-asdfasdfttyy',
     ) {
         try {
             parent::__construct($dsn, $username, $password);
@@ -78,6 +78,7 @@ class DatabaseImpl extends PDO implements DatabaseDAO
 
     public function checkToken(string $token): int
     {
+        if($token == "" || $token == null) return 0;
         try {
             $result = $this->prepareQuery("select", "users", ["id"], ["token" => $token], ["where" => "token = :token"]);
             if (count($result) == 1) {
