@@ -20,7 +20,10 @@ if ($data['username'] != '' && $data['password'] != '') {
         [$result, $token] = $con->updateToken($result[0]['id']);
         if ($result == 1) {
             $response->ok = true;
-            $response->data = $token;
+            $response->data = [
+                "token"=>$token,
+                "username"=>$data['username']
+            ];
         } else {
             $response->ok = false;
         }

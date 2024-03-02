@@ -27,8 +27,8 @@ try {
             "select",
             "users",
             ["id"],
-            [':username' => $data['username']],
-            ["where" => "username = :username"]
+            [':username' => $data['username'],":id" => $idUser],
+            ["where" => "username = :username and id != :id"]
         );
         if ($result === false || count($result) > 0) {
             throw new Exception("User already exist", 404);
@@ -50,7 +50,8 @@ try {
         $params,
         ["where" => "id = :id"],
     );
-    if ($resultUpdate === 0 || $resultUpdate === false) {
+
+    if ($resultUpdate === false) {
         throw new Exception("An error was ocurred, please try again", 500);
     }
 
